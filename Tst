@@ -1,0 +1,191 @@
+-- Chazai Egg Hatch with own garden egg detection, dropdown pet selection, scrollable, minimized toggle
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+-- Egg Types with Pets
+local EggPets = {
+	["Common Egg"] = {"Bunny", "Dog", "Golden Lab"},
+	["Uncommon Egg"] = {"Black Bunny", "Chicken", "Cat", "Deer"},
+	["Rare Egg"] = {"Orange Tabby", "Pig", "Rooster", "Monkey"},
+	["Legendary Egg"] = {"Cow", "Silver Monkey", "Sea Otter", "Turtle", "Polar Bear"},
+	["Mythical Egg"] = {"Grey Mouse", "Brown Mouse", "Squirrel", "Red Giant Ant", "Red Fox"},
+	["Bug Egg"] = {"Snail", "Giant Ant", "Caterpillar", "Dragonfly"},
+	["Bee Egg"] = {"Bee", "Honey Bee", "Bear Bee", "Petal Bee", "Queen Bee"},
+	["Anti Bee Egg"] = {"Wasp", "Tarantula Hawk", "Moth", "Butterfly", "Disco Bee"},
+	["Oasis Egg"] = {"Meerkat", "Sand Snake", "Axolotl", "Hyacinth Macaw", "Fennec Fox"},
+	["Night Egg"] = {"Mole", "Frog", "Echo Frog", "Nightowl", "Raccoon"}
+}
+
+local PetOptions = {"Queen Bee", "Fennec Fox", "Raccoon", "Butterfly", "Mimic Octopus", "Disco Bee"}
+
+-- GUI
+local gui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+local MainFrame = Instance.new("Frame", gui)
+MainFrame.Size = UDim2.new(0, 400, 0, 300)
+MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Name = "ChrolloPetspawnXEgg esp"
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Title + Minimize
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Text = "ChrolloPetspawnXEgg esp"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
+
+local Minimize = Instance.new("TextButton", Title)
+Minimize.Size = UDim2.new(0, 30, 0, 30)
+Minimize.Position = UDim2.new(1, -30, 0, 0)
+Minimize.Text = "-"
+Minimize.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Minimize.TextColor3 = Color3.new(1, 1, 1)
+local minimized = false
+Minimize.MouseButton1Click:Connect(function()
+	minimized = not minimized
+	MainFrame.Size = minimized and UDim2.new(0, 120, 0, 30) or UDim2.new(0, 400, 0, 300)
+	Minimize.Text = minimized and "+" or "-"
+end)
+
+-- Tabs
+local EggTab = Instance.new("TextButton", MainFrame)
+EggTab.Text = "Egg Predictor"
+EggTab.Size = UDim2.new(0.5, 0, 0, 30)
+EggTab.Position = UDim2.new(0, 0, 0, 30)
+EggTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+EggTab.TextColor3 = Color3.new(1, 1, 1)
+
+local PetTab = Instance.new("TextButton", MainFrame)
+PetTab.Text = "Pet Spawner"
+PetTab.Size = UDim2.new(0.5, 0, 0, 30)
+PetTab.Position = UDim2.new(0.5, 0, 0, 30)
+PetTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+PetTab.TextColor3 = Color3.new(1, 1, 1)
+
+local EggPanel = Instance.new("Frame", MainFrame)
+EggPanel.Size = UDim2.new(1, 0, 1, -60)
+EggPanel.Position = UDim2.new(0, 0, 0, 60)
+EggPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+EggPanel.Visible = true
+
+local PetPanel = Instance.new("Frame", MainFrame)
+PetPanel.Size = UDim2.new(1, 0, 1, -60)
+PetPanel.Position = UDim2.new(0, 0, 0, 60)
+PetPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+PetPanel.Visible = false
+
+-- Egg Detection Display
+local EggStatus = Instance.new("TextLabel", EggPanel)
+EggStatus.Size = UDim2.new(1, -10, 0, 50)
+EggStatus.Position = UDim2.new(0, 5, 0, 5)
+EggStatus.BackgroundTransparency = 1
+EggStatus.TextColor3 = Color3.new(1, 1, 1)
+EggStatus.Font = Enum.Font.SourceSans
+EggStatus.TextSize = 18
+EggStatus.TextWrapped = true
+EggStatus.Text = "No Egg Detected"
+
+-- Pet Dropdown
+local PetDropdown = Instance.new("ScrollingFrame", PetPanel)
+PetDropdown.Size = UDim2.new(1, -20, 0, 100)
+PetDropdown.Position = UDim2.new(0, 10, 0, 10)
+PetDropdown.CanvasSize = UDim2.new(0, 0, 0, #PetOptions * 25)
+PetDropdown.ScrollBarThickness = 6
+PetDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+local SelectedPet = nil
+for i, petName in ipairs(PetOptions) do
+	local petBtn = Instance.new("TextButton", PetDropdown)
+	petBtn.Size = UDim2.new(1, 0, 0, 25)
+	petBtn.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
+	petBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	petBtn.TextColor3 = Color3.new(1, 1, 1)
+	petBtn.Text = petName
+	petBtn.MouseButton1Click:Connect(function()
+		SelectedPet = petName
+	end)
+end
+
+local AgeInput = Instance.new("TextBox", PetPanel)
+AgeInput.PlaceholderText = "AGE HERE"
+AgeInput.Size = UDim2.new(1, -20, 0, 30)
+AgeInput.Position = UDim2.new(0, 10, 0, 120)
+AgeInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+AgeInput.TextColor3 = Color3.new(1, 1, 1)
+
+local WeightInput = Instance.new("TextBox", PetPanel)
+WeightInput.PlaceholderText = "Pet Weight (1-100kg)"
+WeightInput.Size = UDim2.new(1, -20, 0, 30)
+WeightInput.Position = UDim2.new(0, 10, 0, 160)
+WeightInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+WeightInput.TextColor3 = Color3.new(1, 1, 1)
+
+local InventoryList = Instance.new("TextLabel", PetPanel)
+InventoryList.Size = UDim2.new(1, -20, 0, 60)
+InventoryList.Position = UDim2.new(0, 10, 0, 240)
+InventoryList.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+InventoryList.TextColor3 = Color3.new(0.6, 1, 0.6)
+InventoryList.TextXAlignment = Enum.TextXAlignment.Left
+InventoryList.TextYAlignment = Enum.TextYAlignment.Top
+InventoryList.Text = ""
+InventoryList.Font = Enum.Font.SourceSans
+InventoryList.TextSize = 14
+InventoryList.TextWrapped = true
+InventoryList.TextScaled = false
+InventoryList.TextStrokeTransparency = 0.7
+
+local SpawnButton = Instance.new("TextButton", PetPanel)
+SpawnButton.Text = "Spawn Pet"
+SpawnButton.Size = UDim2.new(1, -20, 0, 30)
+SpawnButton.Position = UDim2.new(0, 10, 0, 200)
+SpawnButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+SpawnButton.TextColor3 = Color3.new(1, 1, 1)
+
+SpawnButton.MouseButton1Click:Connect(function()
+	if SelectedPet then
+		local age = AgeInput.Text
+		local weight = WeightInput.Text
+		InventoryList.Text = InventoryList.Text .. "\n🐾 " .. SelectedPet .. " | Age: " .. age .. " | Weight: " .. weight .. "kg"
+	end
+end)
+
+EggTab.MouseButton1Click:Connect(function()
+	EggPanel.Visible = true
+	PetPanel.Visible = false
+end)
+PetTab.MouseButton1Click:Connect(function()
+	EggPanel.Visible = false
+	PetPanel.Visible = true
+end)
+
+-- Egg Detection in Own Garden Only
+local function detectEgg()
+	local plot = Workspace:FindFirstChild(Player.Name)
+	if not plot then
+		EggStatus.Text = "❌ No Garden Found"
+		return
+	end
+	for _, obj in pairs(plot:GetDescendants()) do
+		if obj:IsA("Model") and obj.Name:lower():find("egg") then
+			for eggType, pets in pairs(EggPets) do
+				if obj.Name:lower():find(eggType:lower():gsub(" ", "")) then
+					local chosen = pets[math.random(1, #pets)]
+					EggStatus.Text = "🎯 Detected: " .. eggType .. " → Predicted Pet: " .. chosen
+					return
+				end
+			end
+		end
+	end
+	EggStatus.Text = "No Egg Detected"
+end
+
+detectEgg()
+while true do
+	task.wait(5)
+	detectEgg()
+end
